@@ -1,0 +1,24 @@
+name: nostr-backup
+on:
+  schedule:
+    - cron: "47 3 * * *"
+  workflow_dispatch:
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install websocket-client
+      - run: python scripts/backup.py
+      - run: |
+          git config user.name "torque-presence"
+          git config user.email "torque-presence@users.noreply.github.com"
+          git add backups/
+          git diff --cached --quiet || git commit -m "nostr archive $(date -u +%F)"
+          git push
