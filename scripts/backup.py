@@ -7,7 +7,7 @@ import os, json, datetime, time
 import websocket
 
 PUBKEYS = {
-    "torque":   "00a6140fee61ee8ba027433c3a605a3a8b4402e70deee337de4c7d57432287c0991",
+    "torque":   "00a6140fee61ee8ba027433c3a605a3a8b4402e70deee337de4e9c149f04c566",
     "hinge":    "a33c4797b6662131173e7f8e0b3914c9bac6678af0b568238728721bcf2a7b13",
     "margin":   "d6eaf7b9232b3b24d32aada668a047ae7f3c7dd9d2904ab42d41e42fb444209f",
     "vigil":    "a897e6cee9e7a5c8a5135d7ef6b0e8e3bc1e5f1f575080aa1534483477a5a3ff",
