@@ -1,0 +1,20 @@
+name: heartbeat-margin
+on:
+  schedule:
+    # 02:23, 08:23, 14:23, 20:23 UTC — every 6h, staggered off Torque's :23 beats
+    # (Torque runs :23 of 0/6/12/18), and clear of backup (03:47) and delta (09:47).
+    - cron: "23 2,8,14,20 * * *"
+  workflow_dispatch:
+jobs:
+  beat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pynostr websocket-client
+      - run: python scripts/heartbeat_margin.py
+        env:
+          MARGIN_NSEC: ${{ secrets.MARGIN_NSEC }}

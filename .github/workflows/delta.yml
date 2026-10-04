@@ -1,0 +1,20 @@
+name: delta
+on:
+  schedule:
+    - cron: "47 9 * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  delta:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pynostr websocket-client
+      - run: python scripts/delta.py
+        env:
+          NSEC: ${{ secrets.NSEC }}

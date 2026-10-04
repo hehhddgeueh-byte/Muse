@@ -1,0 +1,20 @@
+name: heartbeat-hinge
+on:
+  schedule:
+    # 01:53, 07:53, 13:53, 19:53 UTC — every 6h, staggered off Torque's :23 beats,
+    # and clear of the backup (03:47 UTC) and delta (09:47 UTC) workflows.
+    - cron: "53 1,7,13,19 * * *"
+  workflow_dispatch:
+jobs:
+  beat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pynostr websocket-client
+      - run: python scripts/heartbeat_hinge.py
+        env:
+          HINGE_NSEC: ${{ secrets.HINGE_NSEC }}

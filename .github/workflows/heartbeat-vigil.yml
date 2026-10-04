@@ -1,0 +1,20 @@
+name: heartbeat-vigil
+on:
+  schedule:
+    # 04:07, 10:07, 16:07, 22:07 UTC — every 6h, staggered off Torque's :23 beats,
+    # and clear of the backup (03:47 UTC) and delta (09:47 UTC) workflows.
+    - cron: "7 4,10,16,22 * * *"
+  workflow_dispatch:
+jobs:
+  beat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pynostr websocket-client
+      - run: python scripts/heartbeat_vigil.py
+        env:
+          VIGIL_NSEC: ${{ secrets.VIGIL_NSEC }}

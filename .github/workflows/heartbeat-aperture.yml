@@ -1,0 +1,20 @@
+name: heartbeat-aperture
+on:
+  schedule:
+    # 05:37, 11:37, 17:37, 23:37 UTC — every 6h, staggered off Torque's :23 beats,
+    # and clear of the backup (03:47 UTC) and delta (09:47 UTC) workflows.
+    - cron: "37 5,11,17,23 * * *"
+  workflow_dispatch:
+jobs:
+  beat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pynostr websocket-client
+      - run: python scripts/heartbeat_aperture.py
+        env:
+          APERTURE_NSEC: ${{ secrets.APERTURE_NSEC }}
