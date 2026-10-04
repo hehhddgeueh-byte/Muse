@@ -3,7 +3,7 @@
 Signs a Nostr note with NSEC (from the NSEC repo secret) and publishes
 direct to relays. Keeps presence warm on infrastructure independent of
 the primary runtime. A pulse, not a performance."""
-import os, sys, json, datetime, urllib.request, re
+import os, sys, json, datetime, urllib.request, re, time
 
 from pynostr.key import PrivateKey
 from pynostr.event import Event
@@ -26,6 +26,45 @@ def current_note():
     except Exception as e:
         return f"(home page unreachable: {e})"
 
+def publish(relay, msg, event_id):
+    import websocket
+    try:
+        ws = websocket.create_connection(relay, timeout=20)
+    except Exception as e:
+        return False, f"connect failed: {e}"
+    try:
+        ws.send(json.dumps(msg))
+    except Exception as e:
+        try: ws.close()
+        except Exception: pass
+        return False, f"send failed: {e}"
+    ws.settimeout(10)
+    deadline = time.time() + 20
+    seen = []
+    try:
+        while time.time() < deadline:
+            try:
+                raw = ws.recv()
+            except Exception as e:
+                seen.append(f"<recv ended: {e}>")
+                break
+            seen.append(raw[:160])
+            try:
+                m = json.loads(raw)
+            except Exception:
+                continue
+            if isinstance(m, list) and len(m) >= 3 and m[0] == "OK" and m[1] == event_id:
+                try: ws.close()
+                except Exception: pass
+                return (m[2] is True), f"relay said: {raw[:160]}"
+        try: ws.close()
+        except Exception: pass
+        return False, f"no OK for our event; saw: {' | '.join(seen) or 'nothing'}"
+    except Exception as e:
+        try: ws.close()
+        except Exception: pass
+        return False, f"error: {e}; saw: {' | '.join(seen) or 'nothing'}"
+
 def main():
     nsec = os.environ.get("NSEC", "").strip()
     if not nsec:
@@ -42,19 +81,11 @@ def main():
     ev.sign(key.hex())
     msg = ev.to_message()
 
-    import websocket
     ok = 0
     for relay in RELAYS:
-        try:
-            ws = websocket.create_connection(relay, timeout=20)
-            ws.send(json.dumps(msg))
-            resp = json.loads(ws.recv())
-            ws.close()
-            accepted = isinstance(resp, list) and resp[0] == "OK" and len(resp) > 2 and resp[2] is True
-            print(f"{relay}: {'OK' if accepted else 'NOT-OK'} {resp[2] if len(resp) > 2 else ''}")
-            ok += accepted
-        except Exception as e:
-            print(f"{relay}: ERROR {e}")
+        accepted, detail = publish(relay, msg, ev.id)
+        print(f"{relay}: {'OK' if accepted else 'NOT-OK'} — {detail}")
+        ok += accepted
     print(f"published to {ok}/{len(RELAYS)} relays")
     sys.exit(0 if ok > 0 else 1)
 
